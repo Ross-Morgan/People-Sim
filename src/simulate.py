@@ -2,7 +2,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
-from threading import Thread, Lock
+from threading import Lock, Thread
+from time import sleep
+
+
+def make_constant(prop: property) -> None:
+    print(prop)
+
+    name = prop.fget.__name__
+
+    def const_setter(*_, **__):
+        """Constant Property"""
+        print(f"{name} is constant")
+
+    prop.fset = const_setter
 
 
 @dataclass
@@ -25,39 +38,34 @@ class TimeLoop:
         self._start = start_time
         self._stop = stop_time
         self._increment = increment
-        
-
+        pass
         self._lock = Lock()
-        self._inc_time = self.inc_time_func()
-        self._thread = Thread(target=self._inc_time, name="TimeThread",
+        self._inc_time = self.inc_time_func(delay)
+        self._thread = Thread(target=self._inc_time, name="TimeThread", args=(self,),
                               daemon=True)
 
-    def inc_time_func(self):
+    def inc_time_func(self, delay: float):
         def _inc_time(self: TimeLoop):
                 while True:
                     with self._lock:
+                        print(self._current_time, end="  |  ")
                         self._current_time += self._increment
+                        print(self._current_time)
+                        sleep(delay)
         return _inc_time
 
     @property
     def time(self) -> datetime:
-        pass
-    @property
-    def start(self):
-        return self._start
-    @property
-    def stop(self):
-        return self._stop
+        with self._lock:
+            return self._current_time
 
-    @time.setter
-    def time(self):
-        """Keep property constant"""
-    @start.setter
-    def start(self):
-        """Keep property constant"""
-    @stop.setter
-    def stop(self):
-        """Keep property constant"""
+    @property
+    def start(self) -> datetime:
+        return self._start
+
+    @property
+    def stop(self) -> datetime | None:
+        return self._stop
 
     def run(self):
         self._thread.start()
@@ -70,11 +78,22 @@ class Simulator:
     async def run(self, time: float = 0):
         """
         @param time (float) - number of seconds to run loop for
-                default (0) - runs indefinitely 
+                default (0) - runs indefinitely
         """
         while True:
             event, args, kwargs = self.get_next_event()
             event(*args, **kwargs)
 
+            sleep(time)
+
     def get_next_event(self):
         pass
+
+
+tl = TimeLoop(
+    start_time=datetime(2021, 11, 23, 10, 10),
+    increment=timedelta(days=1),
+    delay=1
+)
+
+tl.run()
