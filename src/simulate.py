@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from threading import Lock, Thread
-from time import sleep
+from time import time as t_time, sleep
 
 
 def make_constant(prop: property) -> None:
@@ -15,7 +15,7 @@ def make_constant(prop: property) -> None:
         """Constant Property"""
         print(f"{name} is constant")
 
-    prop.fset = const_setter
+    object.__setattr__(prop, "fset", const_setter)
 
 
 @dataclass
@@ -38,7 +38,7 @@ class TimeLoop:
         self._start = start_time
         self._stop = stop_time
         self._increment = increment
-        pass
+
         self._lock = Lock()
         self._inc_time = self.inc_time_func(delay)
         self._thread = Thread(target=self._inc_time, name="TimeThread", args=(self,),
@@ -75,19 +75,22 @@ class Simulator:
     def __init__(self, ips: int) -> None:
         self._iterations_per_second = ips
 
-    async def run(self, time: float = 0):
+    async def run(self, duration: float = 0):
         """
         @param time (float) - number of seconds to run loop for
                 default (0) - runs indefinitely
         """
-        while True:
+
+        duration = duration or True
+
+        while True or t_time() + duration:
             event, args, kwargs = self.get_next_event()
             event(*args, **kwargs)
 
             sleep(time)
 
     def get_next_event(self):
-        pass
+        """Get next event to run in the event loop"""
 
 
 tl = TimeLoop(
